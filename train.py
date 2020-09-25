@@ -67,7 +67,7 @@ def test(model, data, w2i, batch_size, task_id):
         a = to_var(torch.LongTensor(a))
         pred = model(story, q)
         pred_idx = pred.max(1)[1]
-        correct += torch.sum(pred_idx == a).data[0]
+        correct += torch.sum(pred_idx == a).item()
         count += batch_size
     acc = correct/count*100
     print('Task {} Test Acc: {:.2f}% - '.format(task_id, acc), correct, '/', count)
@@ -92,22 +92,22 @@ def train(model, train_data, test_data, optimizer, loss_fn, w2i, task_id, batch_
             batch_data = train_data[i:i+batch_size]
             story = [d[0] for d in batch_data]
             story_len = min(max_story_len, max([len(s) for s in story]))
-            s_sent_len = max([len(sent) for s in story for sent in s])
-            q = [d[1] for d in batch_data]
-            q_sent_len = max([len(sent) for sent in q])
+            story_sent_len = max([len(sent) for s in story for sent in s])
+            question = [d[1] for d in batch_data]
+            question_sent_len = max([len(sent) for sent in question])
 
-            vec_data = vectorize(batch_data, w2i, story_len, s_sent_len, q_sent_len)
+            vec_data = vectorize(batch_data, w2i, story_len, story_sent_len, question_sent_len)
             story = [d[0] for d in vec_data]
-            q = [d[1] for d in vec_data]
-            a = [d[2][0] for d in vec_data]
+            question = [d[1] for d in vec_data]
+            answer = [d[2][0] for d in vec_data]
 
             story = to_var(torch.LongTensor(story))
-            q = to_var(torch.LongTensor(q))
-            a = to_var(torch.LongTensor(a))
+            question = to_var(torch.LongTensor(question))
+            answer = to_var(torch.LongTensor(answer))
 
-            pred = model(story, q)
+            pred = model(story, question)
 
-            loss = loss_fn(pred, a)
+            loss = loss_fn(pred, answer)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -119,7 +119,7 @@ def train(model, train_data, test_data, optimizer, loss_fn, w2i, task_id, batch_
                         param.data[0] = 0
 
             pred_idx = pred.max(1)[1]
-            correct += torch.sum(pred_idx == a).data[0]
+            correct += torch.sum(pred_idx == answer).item()
             count += batch_size
 
             # for p in model.parameters():
@@ -152,16 +152,16 @@ def run():
         w2i = dict((w, i) for i, w in enumerate(vocab, 1))
         w2i[PAD] = 0
         vocab_size = len(vocab) + 1
-        story_len = min(max_story_len, max(len(s) for s, q, a in data))
-        s_sent_len = max(len(ss) for s, q, a in data for ss in s)
-        q_sent_len = max(len(q) for s, q, a in data)
+        story_len = min(max_story_len, max(len(story) for story, question, answer in data))
+        story_sent_len = max(len(sentence) for story, question, answer in data for sentence in story)
+        question_sent_len = max(len(question) for story, question, answer in data)
         print('train num', len(train_data))
         print('test num', len(test_data))
         print('vocab_size', vocab_size)
         print('embd_size', embd_size)
         print('story_len', story_len)
-        print('s_sent_len', s_sent_len)
-        print('q_sent_len', q_sent_len)
+        print('story_sent_len', story_sent_len)
+        print('question_sent_len', question_sent_len)
 
         model = MemNN(vocab_size, embd_size, vocab_size, story_len)
         if torch.cuda.is_available():

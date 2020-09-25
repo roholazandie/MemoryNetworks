@@ -79,7 +79,7 @@ def parse_stories(lines, only_supporting=False):
             # a = tokenize(a)
             # answer is one vocab word even if it's actually multiple words
             a = [a]
-            substory = None
+            #substory = None
 
             # remove question marks
             if q[-1] == "?":
@@ -110,7 +110,8 @@ def tokenize(sent):
     >>> tokenize('Bob dropped the apple. Where is the apple?')
     ['Bob', 'dropped', 'the', 'apple', '.', 'Where', 'is', 'the', 'apple', '?']
     '''
-    return [x.strip() for x in re.split('(\W+)?', sent) if x.strip()]
+    return re.findall("[A-Z]{2,}(?![a-z])|[A-Z][a-z]+(?=[A-Z])|[\'\w\-]+", sent)
+    #return [x.strip() for x in re.split('(\W+)?', sent) if x.strip()]
 
 
 def word_to_index(sent, w2i):
